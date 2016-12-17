@@ -1,219 +1,258 @@
-var express = require("express");
-var bodyParser = require("body-parser");
-var cors = require("cors");
-var mongoose = require("mongoose");
-var app = express();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body class="container">
+	<div id="app"> <br> <br>
+		<!--
+			
+			<button class="btn btn-primary" type="button" @click="deleteUserFromRoom()">deleteUserFromRoom</button>
+			<button class="btn btn-primary" type="button" @click="addUserToRoom()">addUserToRoom</button>
+			<button class="btn btn-primary" type="button" @click="deleteUser()">deleteUser</button>
+			<button class="btn btn-primary" type="button" @click="addUser()">addUser</button>
+		-->
+		<nav>
+			<button class="btn btn-primary" type="button" @click="getAllUsers()">getAllUsers</button>
+			<button class="btn btn-primary" type="button" @click="getAllRooms()">getAllRooms</button>
+			<button class="btn btn-primary" type="button" @click="getAllMessage()">getAllMessage</button>
+			<button class="btn btn-primary" type="button" @click="deleteMessage()">deleteMessage</button>
+			<button class="btn btn-primary" type="button" @click="deleteAllUsers()">deleteAllUsers</button>
+		</nav>
+		<h1>Add room</h1>
+		<form class="form-inline">
+			<input type="text" class="form-control" v-model="name" placeholder="name"> 
+			<input type="text" class="form-control" v-model="mafia" placeholder="mafia"> 
+			<input type="text" class="form-control" v-model="doctor" placeholder="doctor"> 
+			<input type="text" class="form-control" v-model="citizen" placeholder="citizen"> 
+			<input type="text" class="form-control" v-model="sheriff" placeholder="sheriff"> 
+			<button class="btn btn-primary" type="button" @click="saveRoom()">Save</button>
+		</form>
+		<br><br><br>
+		<div class = "col-lg-7 col-md-7">
+			<h1>Rooms</h1>
+			<table class="table table-hover">
+				<tr>
+					<th>name</th>
+					<th>mafia</th>
+					<th>doctor</th>
+					<th>citizen</th>
+					<th>sheriff</th>
+					<th>number</th>
+					<th>count</th>
+					<th>_id</th>
+				</tr>
+				<tr v-for="room in rooms">
+					<td>{{ room.name }}</td>
+					<td>{{ room.mafia }}</td>
+					<td>{{ room.doctor }}</td>
+					<td>{{ room.citizen }}</td>
+					<td>{{ room.sheriff }}</td>
+					<td>{{ room.number }}</td>
+					<td>{{ room.count }}</td>
+					<td>{{ room._id }}</td>
+				</tr>
+			</table>
+		</div>
 
-app.use(cors());
-app.use(bodyParser());
-app.set('port', (process.env.PORT || 5000));
-/* ------------------------------------------------------------------------------------------
-* Подключаем все коллекций -
-*/
-	var Room = require("./app/models/room");
-	var User = require("./app/models/user");
-	var Chat = require("./app/models/chat");
-/* ------------------------------------------------------------------------------------------
-* test
-*/
-	app.get("/", function(req, res) {
-		res.end("Hello");
-	}); 
-/* ------------------------------------------------------------------------------------------
-* add message
-*/
-	app.post("/api/chat/add", function(req, res, next) {
-		var chat = new Chat({
-			message: req.body.message,
-			room: req.body.roomId,
-			user: req.body.userId,
-			date: new Date()
-		});
+		<div class = "col-lg-5 col-md-5">
+			<h1>Users</h1>
+			<table class="table table-hover">
+				<tr>
+					<th>name</th>
+					<th>_id</th>
+				</tr>
+				<tr v-for="user in users">
+					<td>{{ user.name }}</td>
+					<td>{{ user._id }}</td>
+				</tr>
+			</table>
+		</div>
 
-		chat.save(function(err, affected) {
-			if(err) res.send(err);
-			else {
-				res.send(affected);
-			}
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* get message
-*/
-	app.get("/api/chat/:id", function(req, res) {
-		Chat.find({room: req.params.id})
-			.populate([{path: 'user', select: 'name _id'}])
-			.populate([{path: 'room', select: 'name _id'}])
-			.exec(function(err, result) {
-				if(err) res.send(err);
-				else {
-					res.send(result);
+		<br> <br>
+		<h1>Add message</h1>
+		<form class="form-inline">
+			<input type="text" class="form-control" v-model="message" placeholder="message"> 
+			<input type="text" class="form-control" v-model="roomId" placeholder="roomId"> 
+			<input type="text" class="form-control" v-model="userId" placeholder="userId"> 
+			<button class="btn btn-primary" type="button" @click="saveMessage()">Save</button>
+		</form>
+
+		<div class = "col-lg-6 col-md-6">
+			<h1>Messages</h1>
+			<table class="table table-hover">
+				<tr>
+					<th>_id</th>
+					<th>message</th>
+					<th>room</th>
+					<th>user</th>
+				</tr>
+				<tr v-for="message in messages">
+					<td>{{ message._id }}</td>
+					<td>{{ message.message }}</td>
+					<td>{{ message.room[0].name }}</td>
+					<td>{{ message.user[0].name }}</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.26/vue.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/vue.resource/1.0.3/vue-resource.min.js"></script>
+	<script>
+		new Vue({
+			el: "#app",
+			data: {
+				url: "https://rauan-android-backend.herokuapp.com/",
+				posts: [],
+				name: "",
+				mafia: "",
+				doctor: "",
+				citizen: "",
+				sheriff: "",
+				rooms: [],
+				users: [],
+				message: "",
+				userId: "5854ba5297ba0b00043bf8c1",
+				roomId: "5853a0acb0fccd000433ac5a",
+				count: 2,
+				messages: []
+			},
+			methods: {
+				saveMessage: function() {
+					this.$http.post(this.url + "api/chat/add", {message: this.message, roomId: this.roomId, userId: this.userId}).then(
+						function(response) {
+							console.log(response);
+							this.messages.push(response.data);
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				getAllMessage: function() {
+					this.$http.get(this.url + "api/chat/" + this.roomId).then(
+						function(response) {
+							this.messages = response.data;
+							console.log(response.data, "---messages");
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				deleteMessage: function() {
+					this.$http.delete(this.url + "api/chat/" + this.roomId).then(
+						function(response) {
+							console.log(response, "-- deleteMessage");
+							//this.messages = [];
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				saveRoom: function() {
+					var obj = {name: this.name, mafia: this.mafia, doctor: this.doctor, citizen: this.citizen, sheriff: this.sheriff, creator: this.userId};
+					this.$http.post(this.url + "api/room/add", obj).then(
+						function(response) {
+							console.log(response);
+							this.rooms.push(response.data);
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				getAllRooms: function() {
+					this.$http.get(this.url + "api/room").then(
+						function(response) {
+							for(var i = 0; i < response.data.length; i++) {
+								console.log(response.data[i]);
+							}
+							this.rooms = response.data;
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				getAllUsers: function() {
+					this.$http.get(this.url + "api/user").then(
+						function(response) {
+							console.log(response.data);
+							this.users = response.data;
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				deleteUser: function() {
+					this.$http.post(this.url + "api/user/delete", {id: "5850feeb193fb500042a4d96"}).then(
+						function(response) {
+							console.log(response);
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				deleteAllUsers: function() {
+					this.$http.post(this.url + "api/user/deleteAll", {}).then(
+						function(response) {
+							console.log(response);
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				addUser: function() {
+					this.$http.post(this.url + "api/user/add", {name: "Rauan Satanbek"}).then(
+						function(response) {
+							console.log(response);
+						},
+						function(error) {
+							console.log(error);
+						}
+					);
+				},
+				addUserToRoom: function() {
+					this.$http.post(this.url + "api/room/addUser", {userId: this.userId, roomId: this.roomId, count: this.count})
+						.then(
+							function(response) {
+								console.log(response);
+							},
+							function(error) {
+								console.log(error);
+							}
+						);
+				},
+				deleteUserFromRoom: function() {
+					this.$http.post(this.url + "api/room/daleteUser", {userId: this.userId, roomId: this.roomId,  count: this.count})
+						.then(
+							function(response) {
+								console.log(response);
+							},
+							function(error) {
+								console.log(error);
+							}
+						);
 				}
-			});
-	});
-/* ------------------------------------------------------------------------------------------
-* delete message
-*/
-	app.delete("/api/chat/:id", function(req, res) {
-		Chat.remove({room: req.params.id}, function(err, affected) {
-			if(err) {
-				res.send(err);
-			} else {
-				res.send(affected);
+			},
+			created: function() {
+				// this.getAllUsers();
+				// this.getAllRooms();
+				// this.getAllMessage();
+				// this.deleteMessage();
+				// this.deleteUserFromRoom();
+				// this.addUserToRoom();
+				// this.deleteUser();
+				// this.addUser();
 			}
 		});
-	});
-/* ------------------------------------------------------------------------------------------
-* add User
-*/
-	app.post("/api/user/add", function(req, res) {
-		var name = req.body.name;
-		var user = new User({
-			name: name
-		});
-		user.save(function(err, affected) {
-			if(err) {
-				res.send(affected);
-			} else {
-				res.send(affected);
-			}
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* delete User
-*/
-	app.post("/api/user/delete", function(req, res, next) {
-		User.remove({_id: req.body.id}, function(err, affected) {
-			if(err) {
-				res.send(err);
-			} else {
-				res.send("OK");
-			}
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* delete all User
-*/
-	app.post("/api/user/deleteAll", function(req, res, next) {
-		User.remove({}, function(err, affected) {
-			if(err) {
-				res.send(err);
-			} else {
-				res.send("OK");
-			}
-		});
-	})
-/* ------------------------------------------------------------------------------------------
-* get all users
-*/
-	app.get("/api/user", function(req, res) {
-		User.find({}, function(err, result) {
-			res.send(result);
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* add room 
-*/
-	app.post("/api/room/add", function(req, res) {
-		var name = req.body.name,
-			mafia = parseInt(req.body.mafia),
-			doctor = parseInt(req.body.doctor),
-			citizen = parseInt(req.body.citizen),
-			sheriff = parseInt(req.body.sheriff),
-			creator = req.body.creator,
-			number = mafia + doctor + citizen + sheriff;
-		var room = new Room({
-			name: name,
-			mafia: mafia,
-			doctor: doctor,
-			citizen: citizen, 
-			sheriff: sheriff,
-			number: number,
-			count: 1,
-			creator: creator,
-			users: []
-		});
-
-		room.save(function(err, affected) {
-			if(err) {
-				res.send(err);
-			} else {
-				// getAllRooms(res);
-				res.send(affected);
-			}
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* add a user to a room  
-*/
-	app.post("/api/room/addUser", function(req, res, next) {
-		Room.update({_id: req.body.roomId}, {$push: {users: req.body.userId}, count: (req.body.count + 1)})
-			.exec(function(err, affected) {
-				if(err) res.send(err);
-				else res.send(affected);
-			});
-	});
-/* ------------------------------------------------------------------------------------------
-* delete a user from a room 
-*/
-	app.post("/api/room/daleteUser", function(req, res, next) {
-		Room.update({_id: req.body.roomId}, {$pull: {users: req.body.userId}, count: (req.body.count - 1)})
-			.exec(function(err, affected) {
-				if(err) res.send(err);
-				else res.send(affected);
-			});
-	});
-/* ------------------------------------------------------------------------------------------
-* get all room
-*/
-	app.get("/api/room", function(req, res) {
-		getAllRooms(res);
-	});
-/* ------------------------------------------------------------------------------------------
-* get room
-*/
-	app.get("/api/room/:id", function(req, res) {
-		Room.find({_id: req.params.id})
-			.populate([{path: 'users', select: 'name _id'}])
-			.populate([{path: 'creator', select: 'name _id'}])
-			.exec(function(err, result) {
-				if(err) {
-					res.statusCode = 500;
-					res.send(err);
-				} else {
-					res.send(result[0]);
-				}
-			});
-	});
-/* ------------------------------------------------------------------------------------------
-* delete room
-*/
-	app.delete("/api/room/:id", function(req, res) {
-		Room.remove({_id: req.params.id}, function(err, affected) {
-			if(err) {
-				res.send(err);
-			} else {
-				res.send("OK");
-			}
-		});
-	});
-/* ------------------------------------------------------------------------------------------
-* Возвращяем все румы
-*/	
-	function getAllRooms(res) {
-		Room.find({})
-			.populate([{path: 'users', select: 'name _id'}])
-			.populate([{path: 'creator', select: 'name _id'}])
-			.exec(function(err, result) {
-				if(err) {
-					res.statusCode = 500;
-					res.send(err);
-				} else {
-					res.send(result);
-				}
-			});
-	}
-app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
-});
-
+	</script>
+</body>
+</html>
