@@ -43,6 +43,7 @@
 					<th>number</th>
 					<th>count</th>
 					<th>_id</th>
+					<th>creator id</th>
 				</tr>
 				<tr v-for="room in rooms">
 					<td>{{ room.name }}</td>
@@ -53,6 +54,7 @@
 					<td>{{ room.number }}</td>
 					<td>{{ room.count }}</td>
 					<td>{{ room._id }}</td>
+					<td>{{ room.creator._id }}</td>
 				</tr>
 			</table>
 		</div>
